@@ -1,6 +1,6 @@
 # PLAN — Implementation Plan (Phases 2 & 3)
 
-> **Status:** Phase 1 (docs 01–09) done · Phase 2 (the app + stack) done & verified live · Phase 3 (JSON + idempotency + retry/DLT) done & tested. This file describes *what we're building*; the learning docs in this folder describe *how Kafka works*.
+> **Status:** Phase 1 (docs 01–09) done · Phase 2 (the app + stack) done & verified live · Phase 3 (JSON + idempotency + retry/DLT) done, tested, and **live-verified** (see below). This file describes *what we're building*; the learning docs in this folder describe *how Kafka works*.
 
 ## Context
 
@@ -140,7 +140,7 @@ Missing `CLUSTER_ID` (image throws) · no ZooKeeper-era vars · every listener n
 
 # Phase 3 — JSON payloads · idempotent consumer · retry & DLT
 
-**Status: DONE** — implemented, all 3 integration tests green, docs 06/07/09/README updated. Full live verify is the last step.
+**Status: DONE** — implemented, all 3 integration tests green, docs 06/07/09/README updated, and **live-verified** end-to-end on 2026-08-23 (results + the offset-reset caveat below).
 
 ## What changed
 
@@ -168,10 +168,16 @@ Notes:
 - The DLT record carries `kafka_exception-fqcn` (framework wrapper) **and** `kafka_exception-cause-fqcn` (real cause) — the handler prefers the cause, so the UI shows `java.lang.RuntimeException`, not the wrapper.
 - The DLT listener's own error handler would re-publish to `messages-dlt` if `@DltHandler` throws — the header fix (above) is what prevents that infinite loop.
 
-## Live verify (pending, next)
+## Live verify — DONE (2026-08-23)
 
-1. `./build-deploy.sh` → `docker compose ps` all healthy
-2. POST normal → UI table via SSE; broker replay shows JSON values
-3. POST `boom` → logs show retries → `messages-dlt`; UI DLT table shows it (error `java.lang.RuntimeException`)
-4. `kafka-topics.sh --list` → `messages-dlt`, `messages-retry-1000/2000/4000`
-5. Replay dedup: `--reset-offsets --to-earliest` → UI doesn't duplicate, logs show "Duplicate skipped"
+All 3 integration tests green; live cluster verified end-to-end:
+
+1. `docker compose ps` → 3 brokers healthy + app up
+2. POST normal → UI table + SSE live push (server-rendered and `event:message`); broker replay shows JSON `MessagePayload` values
+3. POST `boom` → log trail: `Producing` → `Record in retry and not yet recovered` on retry-1000/2000/4000 → `Sending to DLT` → `Dead-lettered … error=java.lang.RuntimeException`; DLT record confirmed on `messages-dlt`; UI DLT table shows content + error
+4. `kafka-topics.sh --list` → `messages`, `messages-dlt`, `messages-retry-1000/2000/4000` all present
+5. Dedup replay: see caveat below — verified via duplicate-id redelivery instead
+
+### Caveat: the offset-reset replay can't run against a live app
+
+`kafka-consumer-groups.sh --group kafka-demo-group --reset-offsets --to-earliest --execute` is **refused while the consumer is running** — *"Assignments can only be reset if the group is inactive, but the current state is Stable."* And stopping the app to empty the group would clear the in-memory `DedupStore` (docs/07 §4 tradeoff), so a restart-then-replay would re-process everything instead of skipping. **Live idempotency is verified instead by re-delivering an already-processed payload id** (produce directly to `messages` with a duplicate `MessagePayload.id`): consumer logs `Duplicate skipped id=…` and the UI does not gain a row. A durable dedup store (DB unique constraint / Redis) would be needed to demo true replay-after-restart.
