@@ -1,0 +1,20 @@
+# Self-sufficient config for tests: this file SHADOWS src/main/resources/application.yml
+# on the test classpath (test-classes precedes classes), so it must repeat the kafka keys.
+# bootstrap-servers comes from @TestPropertySource pointing at the embedded broker.
+spring:
+  kafka:
+    topic: messages
+    template:
+      default-topic: messages
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.IntegerSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: kafka-demo-group
+      auto-offset-reset: earliest
+
+app:
+  topic:
+    replicas: 1          # the embedded broker is a single node; RF 3 would fail (see docs/08)

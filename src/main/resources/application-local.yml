@@ -1,0 +1,6 @@
+# LOCAL profile — run the app on your Mac against the compose brokers (EXTERNAL listeners).
+# Activate:  ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# Only overrides the keys it contains; everything else comes from application.yml.
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094

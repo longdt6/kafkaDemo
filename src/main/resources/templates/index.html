@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kafkaDemo — Kafka client playground</title>
+    <link rel="stylesheet" th:href="@{/style.css}" href="/style.css">
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>kafkaDemo</h1>
+        <p class="subtitle">
+            Type a message → REST → Kafka producer → 3-node KRaft cluster →
+            <code>@KafkaListener</code> consumer → live on this page (SSE).
+        </p>
+    </header>
+
+    <!-- Produce -->
+    <section class="card">
+        <h2>Send a message</h2>
+        <form id="msg-form">
+            <input type="text" id="content" name="content"
+                   placeholder="Type a message…" required autofocus>
+            <button type="submit">Send to Kafka</button>
+            <button type="button" id="poison-btn" class="poison-btn" title="content containing 'boom' always throws → retries → DLT">☠ send poison</button>
+            <span id="send-status" class="send-status"></span>
+        </form>
+    </section>
+
+    <!-- Consumed -->
+    <section class="card">
+        <h2>Consumed messages <span class="live-badge">LIVE</span></h2>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Partition</th>
+                <th>Offset</th>
+                <th>Content</th>
+                <th>Timestamp (ms)</th>
+            </tr>
+            </thead>
+            <tbody id="messages">
+            <tr th:each="m : ${messages}">
+                <td th:text="${m.partition}">0</td>
+                <td th:text="${m.offset}">0</td>
+                <td th:text="${m.content}"></td>
+                <td th:text="${m.timestamp}">0</td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="empty-state" th:if="${#lists.isEmpty(messages)}">
+            No messages yet. Send one above, or from the terminal:
+            <code>curl -X POST http://localhost:8080/api/messages -H 'Content-Type: application/json' -d '{"content":"hi"}'</code>
+        </p>
+    </section>
+
+    <!-- Dead-letter topic -->
+    <section class="card">
+        <h2>Dead-letter topic (<code>messages-dlt</code>)</h2>
+        <p class="hint">
+            Records that exhausted their retries land here (see <code>docs/07</code>).
+            Try <em>send poison</em> above — after ~7s of retries the record appears below.
+        </p>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Partition</th>
+                <th>Offset</th>
+                <th>Content</th>
+                <th>Error</th>
+            </tr>
+            </thead>
+            <tbody id="dlt-messages">
+            <tr th:each="d : ${dltMessages}">
+                <td th:text="${d.partition}">0</td>
+                <td th:text="${d.offset}">0</td>
+                <td th:text="${d.content}"></td>
+                <td class="dlt-error" th:text="${d.errorClass}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="empty-state" th:if="${#lists.isEmpty(dltMessages)}">
+            No dead-lettered records yet.
+        </p>
+    </section>
+
+    <footer>
+        producer → Kafka → consumer · docs in <code>docs/</code>
+    </footer>
+</div>
+
+<script>
+    // Produce: POST the form, show partition/offset from the response.
+    const form = document.getElementById('msg-form');
+    const status = document.getElementById('send-status');
+    const sendIt = async (content) => {
+        status.textContent = 'sending…';
+        try {
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content})
+            });
+            document.getElementById('content').value = '';
+            if (!res.ok) {
+                status.textContent = 'ERROR: ' + await res.text();
+                return;
+            }
+            const meta = await res.json();
+            status.textContent = `ok → key=${meta.key} partition=${meta.partition} offset=${meta.offset}`;
+        } catch (err) {
+            status.textContent = 'ERROR: ' + err.message;
+        }
+    };
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendIt(document.getElementById('content').value);
+    });
+    document.getElementById('poison-btn').addEventListener('click', () => sendIt('boom please fail'));
+
+    // Consume live: SSE pushes each consumed record; prepend it (newest on top).
+    const tbody = document.getElementById('messages');
+    const dltTbody = document.getElementById('dlt-messages');
+    const es = new EventSource('/api/messages/stream');
+    es.addEventListener('message', (e) => {
+        const m = JSON.parse(e.data);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${m.partition}</td><td>${m.offset}</td>
+                        <td></td><td>${m.timestamp}</td>`;
+        tr.cells[2].textContent = m.content;   // safe text assignment
+        tbody.prepend(tr);
+    });
+    es.addEventListener('dlt', (e) => {
+        const d = JSON.parse(e.data);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d.partition}</td><td>${d.offset}</td>
+                        <td></td><td class="dlt-error"></td>`;
+        tr.cells[2].textContent = d.content;          // safe text assignment
+        tr.cells[3].textContent = d.errorClass;       // safe text assignment
+        dltTbody.prepend(tr);
+    });
+    es.onerror = () => { /* EventSource auto-reconnects; keep the stream open */ };
+</script>
+</body>
+</html>

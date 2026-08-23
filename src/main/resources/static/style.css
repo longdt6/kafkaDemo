@@ -1,0 +1,192 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #222;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+header {
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #111;
+}
+
+header .subtitle {
+    color: #666;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
+header .subtitle code {
+    background: #eee;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+/* ── send form ── */
+
+#msg-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#msg-form input[type="text"] {
+    flex: 1;
+    min-width: 240px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+#msg-form input[type="text"]:focus {
+    outline: 2px solid #1976d2;
+    border-color: transparent;
+}
+
+#msg-form button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#msg-form button:hover {
+    background: #1565c0;
+}
+
+#msg-form button.poison-btn {
+    background: #c62828;
+}
+
+#msg-form button.poison-btn:hover {
+    background: #b71c1c;
+}
+
+.hint {
+    color: #777;
+    font-size: 0.85rem;
+    margin: -0.5rem 0 1rem;
+}
+
+.dlt-error {
+    color: #c62828;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+    word-break: break-all;
+}
+
+.send-status {
+    font-size: 0.85rem;
+    color: #555;
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.live-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #2e7d32;
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}
+
+/* ── data table ── */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    text-align: left;
+    font-weight: 600;
+    color: #666;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.data-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.data-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.empty-state {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+}
+
+.empty-state code {
+    background: #eee;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-style: normal;
+}
+
+footer {
+    text-align: center;
+    color: #aaa;
+    font-size: 0.8rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+footer code {
+    background: #eee;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+}
